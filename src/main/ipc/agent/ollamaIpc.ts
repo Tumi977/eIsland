@@ -39,6 +39,7 @@ interface OllamaChatIpcRequest {
   context?: string;
   baseUrl?: string;
   temperature?: number;
+  workspaces?: string[];
 }
 
 interface CustomDirectChatIpcRequest {
@@ -50,6 +51,7 @@ interface CustomDirectChatIpcRequest {
   baseUrl: string;
   apiKey: string;
   temperature?: number;
+  workspaces?: string[];
 }
 
 const activeAbortControllers = new Map<string, AbortController>();
@@ -144,7 +146,7 @@ export function registerOllamaIpcHandlers(options: RegisterOllamaIpcHandlersOpti
         },
         executeLocalTool: (toolRequest) => isWebSearchTool(toolRequest.tool)
           ? executeAgentWebSearch(request.token, toolRequest.arguments, abortController.signal)
-          : options.executeAgentLocalTool(toolRequest),
+          : options.executeAgentLocalTool({ ...toolRequest, workspaces: request.workspaces }),
       },
     )
       .catch((err) => {
@@ -206,7 +208,7 @@ export function registerOllamaIpcHandlers(options: RegisterOllamaIpcHandlersOpti
         },
         executeLocalTool: (toolRequest) => isWebSearchTool(toolRequest.tool)
           ? executeAgentWebSearch(request.token, toolRequest.arguments, abortController.signal)
-          : options.executeAgentLocalTool(toolRequest),
+          : options.executeAgentLocalTool({ ...toolRequest, workspaces: request.workspaces }),
       },
     )
       .catch((err) => {

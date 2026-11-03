@@ -111,7 +111,7 @@ describe('useChatState model and user runtime', () => {
     expect(result.modelToggleIcon).toBeTruthy();
     if (provider === 'ollama') expect(result.ollamaDisplayLabel).toBe('ollama (local)');
   });
-  it.each([['user', true, 'deepseek-v4-flash'], ['pro', false, 'deepseek-v4-flash'], ['pro', true, 'custom-api']] as const)('custom role %s credentials %s', (accountRole, credentials, selectedModel) => {
+  it.each([['user', true, 'custom-api'], ['pro', false, 'deepseek-v4-flash'], ['pro', true, 'custom-api']] as const)('custom role %s credentials %s', (accountRole, credentials, selectedModel) => {
     role(accountRole);
     runtime.store.getState().setAiConfig({
       model: 'custom-api',
@@ -122,6 +122,18 @@ describe('useChatState model and user runtime', () => {
     const result = mount();
     expect(result.selectedModel).toBe(selectedModel);
     expect(result.customApiDisplayLabel).toBe(credentials ? 'custom-api (custom)' : 'custom-api');
+  });
+  it.each([['user', 'relay', true], ['pro', 'relay', false], ['pro', 'direct', true]] as const)('custom role %s mode %s runs locally: %s', (accountRole, customApiMode, direct) => {
+    role(accountRole);
+    runtime.store.getState().setAiConfig({
+      model: 'custom-api',
+      apiKey: 'key',
+      endpoint: 'https://example.invalid',
+      customApiMode
+    });
+    const result = mount();
+    expect(result.customApiDirect).toBe(direct);
+    expect(result.isLocalModelSelected).toBe(direct);
   });
   it('native session event refreshes login and profile avatar and its listener is cleaned', async () => {
     let result = mount();

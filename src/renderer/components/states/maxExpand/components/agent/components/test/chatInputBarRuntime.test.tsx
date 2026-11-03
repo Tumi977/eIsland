@@ -100,7 +100,9 @@ it('executes every paid model and context selection with actual helpers and pres
 
 it.each([[false,true],[true,false],[false,false]] as const)('guards native clickable custom and paid choices for pro=%s credentials=%s', (pro,credentials) => {
   props.showModelDropdown = true;props.showContextDropdown = true;props.isProUser = pro;props.hasCustomApiCredentials = credentials;const tree = ChatInputBar(props);const options = find(tree,'max-expand-chat-model-dropdown-item');
-  fire(options[9]);expect(props.setAiConfig).not.toHaveBeenCalled();
+  fire(options[9]);
+  if (credentials) expect(props.setAiConfig).toHaveBeenCalledWith({ model:'custom-api' });else expect(props.setAiConfig).not.toHaveBeenCalled();
+  vi.mocked(props.setAiConfig).mockClear();
   if (!pro) { fire(options[1]);fire(options[12]);expect(props.setAiConfig).not.toHaveBeenCalled(); }
 });
 
@@ -156,7 +158,7 @@ it('contains malformed JSON at the public configuration setter boundary before a
   const original = useIslandStore.getState().aiConfig;
   useIslandStore.getState().setAiConfig(JSON.parse('{"skills":null,"customApiMode":""}') as Partial<Props['aiConfig']>);
   try {
-    props.aiConfig = useIslandStore.getState().aiConfig;props.isCustomApiModel = true;
+    props.aiConfig = useIslandStore.getState().aiConfig;props.isCustomApiModel = true;props.isProUser = true;
     const tree = ChatInputBar(props);expect(nodes(tree).find((node) => node.type === 'select' && node.props.value === 'relay')).toBeDefined();expect(find(tree,'max-expand-chat-skills-drop-hint')).toHaveLength(1);
     pathForFile.mockReturnValue('C:/valid.md');const [drop] = find(tree,'max-expand-chat-skills-section');fire(drop,'onDrop',{ preventDefault:vi.fn(),stopPropagation:vi.fn(),dataTransfer:{ files:[new File(['x'],'valid.md')] } });expect(props.setAiConfig).toHaveBeenLastCalledWith({ skills:[expect.objectContaining({ name:'valid',filePath:'C:/valid.md' })] });
     pick.mockResolvedValue('C:/picked.md');await fire(find(tree,'max-expand-chat-skills-add-btn')[0]);expect(props.setAiConfig).toHaveBeenLastCalledWith({ skills:[expect.objectContaining({ name:'picked',filePath:'C:/picked.md' })] });

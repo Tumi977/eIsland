@@ -62,6 +62,7 @@ export function AiChatContent({ loading = false, sendDisabled = false }: AiChatC
     agentMode,
     showSessionSidebar,
     hasLoginSession, userAvatarUrl,
+    isLocalModelSelected, hasCustomApiCredentials,
     currentAgentModeConfig,
     emptyGreeting, hasActiveTextSelection,
     orderedSessions, getSessionCardState,
@@ -120,7 +121,7 @@ export function AiChatContent({ loading = false, sendDisabled = false }: AiChatC
     }
   }, [handleSend]);
 
-  if (!hasLoginSession) {
+  if (!hasLoginSession && !isLocalModelSelected) {
     return (
       <div className="max-expand-chat" ref={chatRootRef}>
         <div className="max-expand-chat-header">
@@ -137,9 +138,19 @@ export function AiChatContent({ loading = false, sendDisabled = false }: AiChatC
             <button type="button" className="settings-user-secondary-btn" onClick={() => setRegister()}>
               {t('aiChat.auth.gotoRegister', { defaultValue: '前往注册' })}
             </button>
+            <button
+              type="button"
+              className="settings-user-secondary-btn"
+              onClick={() => state.setAiConfig({ model: hasCustomApiCredentials ? 'custom-api' : 'ollama' })}
+            >
+              {t('aiChat.auth.useLocalModel', { defaultValue: '使用本地模型' })}
+            </button>
           </div>
           <div className="settings-user-auth-hint">
             {t('aiChat.auth.hint', { defaultValue: 'mihtnelis Agent 为登录用户提供 AI 对话、工具调用与知识检索服务。' })}
+          </div>
+          <div className="settings-user-auth-hint">
+            {t('aiChat.auth.localModelHint', { defaultValue: '无需登录也可使用 Ollama 本地模型或自定义 API 直连（在「设置 → AI」中配置）。' })}
           </div>
         </div>
       </div>

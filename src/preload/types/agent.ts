@@ -50,6 +50,8 @@ export interface OllamaChatRequest {
   context?: string;
   baseUrl?: string;
   temperature?: number;
+  /** Agent 工作区目录，本地文件工具据此校验访问范围 */
+  workspaces?: string[];
 }
 
 /** 自定义直连聊天请求 */
@@ -63,6 +65,8 @@ export interface CustomDirectChatRequest {
   baseUrl: string;
   apiKey: string;
   temperature?: number;
+  /** Agent 工作区目录，本地文件工具据此校验访问范围 */
+  workspaces?: string[];
 }
 
 /** 聊天会话事件 */

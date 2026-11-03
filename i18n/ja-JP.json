@@ -1055,7 +1055,9 @@
       "entryTitle": "ログインしてAIアシスタントを利用",
       "gotoLogin": "ログインへ",
       "gotoRegister": "新規登録へ",
-      "hint": "mihtnelis Agentは、ログイン済みのユーザーにAIチャット、ツール呼び出し、ナレッジ検索を提供します。"
+      "hint": "mihtnelis Agentは、ログイン済みのユーザーにAIチャット、ツール呼び出し、ナレッジ検索を提供します。",
+      "useLocalModel": "ローカルモデルを使う",
+      "localModelHint": "Ollama ローカルモデルとカスタム API 直接接続はログイン不要で使えます（「設定 → AI」で設定）。"
     },
     "input": {
       "generatingPlaceholder": "生成中...",

@@ -45,7 +45,6 @@ function makeProps(): ComponentProps<typeof AiSettingsSection> {
     aiSettingsPages: [],
     aiSettingsPageLabels: { general: 'General', r1pxc: 'Avatar', ollama: 'Local', 'orb-style': 'Orb' },
     setAiSettingsPage: vi.fn(),
-    isProUser: false,
   };
 }
 vi.mock('react', async (importOriginal) => ({
@@ -60,11 +59,10 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 describe('AiSettingsSection', () => {
-  it.each([false, true])('renders Pro credentials gate and forwards field and workspace edits for Pro=%s', (isProUser) => {
+  it('renders credentials without a Pro gate and forwards field and workspace edits', () => {
     const props = { ...makeProps(), aiConfig: { ...makeProps().aiConfig, workspaces: ['C:/work'] } };
-    props.isProUser = isProUser;
     const tree = AiSettingsSection(props);
-    expect(elementProps(findElement(tree, (n) => 'aria-disabled' in n.props))['aria-disabled']).toBe(!isProUser);
+    expect(elements(tree).filter((n) => elementProps(n).className === 'settings-card').some((n) => 'aria-disabled' in elementProps(n))).toBe(false);
     invoke(findElement(tree, (n) => elementProps(n).label === 'settings.ai.apiEndpoint'), 'onChange', 'https://example.com/v1');
     expect(props.setAiConfig).toHaveBeenCalledWith({ endpoint: 'https://example.com/v1' });
     invoke(findElement(tree, (n) => n.type === 'button' && textContent(n) === 'settings.ai.workspaceAdd'), 'onClick');

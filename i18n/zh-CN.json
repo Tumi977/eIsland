@@ -1057,7 +1057,9 @@
       "entryTitle": "登录后即可使用 AI 智能助手",
       "gotoLogin": "前往登录",
       "gotoRegister": "前往注册",
-      "hint": "mihtnelis Agent 为登录用户提供 AI 对话、工具调用与知识检索服务。"
+      "hint": "mihtnelis Agent 为登录用户提供 AI 对话、工具调用与知识检索服务。",
+      "useLocalModel": "使用本地模型",
+      "localModelHint": "无需登录也可使用 Ollama 本地模型或自定义 API 直连（在「设置 → AI」中配置）。"
     },
     "input": {
       "generatingPlaceholder": "生成中...",

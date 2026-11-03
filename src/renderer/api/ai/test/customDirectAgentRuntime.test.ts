@@ -56,9 +56,14 @@ beforeEach(async () => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('customDirectAgent real prompt and IPC boundary', () => {
-  it.each([{ token: '' }, { token: undefined }, { message: '' }, { message: undefined }, { baseUrl: '' }, { baseUrl: undefined }, { apiKey: '' }, { apiKey: undefined }])('rejects missing public request values %j', async (patch) => {
+  it.each([{ message: '' }, { message: undefined }, { baseUrl: '' }, { baseUrl: undefined }, { apiKey: '' }, { apiKey: undefined }])('rejects missing public request values %j', async (patch) => {
     await expect(stream({ ...base, ...patch } as CustomDirectAgentRequest)).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled(); expect(start).not.toHaveBeenCalled();
+  });
+  it.each([{ token: '' }, { token: undefined }])('starts without login using the built-in prompt %j', async (patch) => {
+    await stream({ ...base, ...patch } as CustomDirectAgentRequest);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(start.mock.calls[0][1]).toMatchObject({ token: '', systemPrompt: expect.stringContaining('eIsland') });
   });
 
   it('requests the real prompt and sends trimmed user input to IPC', async () => {
@@ -98,13 +103,11 @@ describe('customDirectAgent real prompt and IPC boundary', () => {
     if (enabled) expect(onEvent).toHaveBeenCalledWith({ type: 'error', payload: { message: 'Failed' } });
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
-  it.each([new Error('offline'), 'offline'])('reports prompt transport rejection %s', async (error) => {
+  it.each([new Error('offline'), 'offline'])('falls back to the built-in prompt on prompt transport rejection %s', async (error) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     fetchMock.mockRejectedValue(error);const onEvent = vi.fn(); await stream({ onEvent, ...base });
-    expect(onEvent).toHaveBeenCalledWith({ type: 'error', payload: { code: 'PROMPT_FETCH_FAILED', message: '获取系统提示词失败: offline' } });
-    expect(start).not.toHaveBeenCalled();
-  });
-  it('contains prompt failure without an event callback', async () => {
-    fetchMock.mockRejectedValue(new Error('offline')); await stream(base); expect(start).not.toHaveBeenCalled();
+    expect(onEvent).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    expect(start.mock.calls[0][1]).toMatchObject({ systemPrompt: expect.stringContaining('eIsland') });
   });
   it.each([new Error('offline'), 'offline'])('reports IPC start rejection %s', async (error) => {
     start.mockRejectedValue(error);const onEvent = vi.fn();await stream({ onEvent, ...base });

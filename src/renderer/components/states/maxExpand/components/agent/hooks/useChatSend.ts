@@ -132,7 +132,7 @@ export function useChatSend({ state }: UseChatSendParams): UseChatSendResult {
     aiConfig,
     updateMessages, flushPendingAssistantUpdates,
     scheduleAssistantUpdateFlush, refreshActiveSessionStreaming,
-    selectedModel, isOllamaModel, isCustomApiModel,
+    selectedModel, isOllamaModel, isCustomApiModel, customApiDirect,
     selectedProvider, hasCustomApiCredentials,
     contextUsageTokens, selectedContextLimit,
     setAttachmentDragOver, setAttachmentDropInvalid,
@@ -518,7 +518,7 @@ export function useChatSend({ state }: UseChatSendParams): UseChatSendResult {
             return copy;
           });
         }
-      } else if (isCustomApiModel && aiConfig.customApiMode === 'direct' && hasCustomApiCredentials) {
+      } else if (isCustomApiModel && customApiDirect && hasCustomApiCredentials) {
         let receivedDirectChunk = false;
         let directErrorMessage: string | null = null;
         let directThinkingEnabled = true;
@@ -1105,7 +1105,7 @@ export function useChatSend({ state }: UseChatSendParams): UseChatSendResult {
     }
   }, [
     input, agentMode, aiChatMessages, aiChatSessions, activeAiChatSessionId,
-    aiConfig, selectedModel, isOllamaModel, isCustomApiModel,
+    aiConfig, selectedModel, isOllamaModel, isCustomApiModel, customApiDirect,
     selectedProvider, hasCustomApiCredentials, contextUsageTokens, selectedContextLimit,
     pendingAttachments, state.pendingQuote,
     setAiChatStreaming, setAiChatSessionMessages, markAiChatSessionReplyFinished, setAiChatMessages,

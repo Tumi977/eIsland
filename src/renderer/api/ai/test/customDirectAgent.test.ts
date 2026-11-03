@@ -123,16 +123,18 @@ describe('customDirectAgent', () => {
   /* ============================================================= */
 
   describe('validation', () => {
-    it('throws on empty token', async () => {
+    it.each(['', '   '])('starts without login using the built-in prompt for token %j', async (token) => {
+      mockOnCustomDirectChatEvent.mockImplementation((_sessionId: string, cb: (event: { type: string; payload: unknown }) => void) => {
+        setTimeout(() => cb({ type: 'final', payload: {} }), 0);
+        return vi.fn();
+      });
       const { streamCustomDirectAgent } = await import('../customDirectAgent');
-      await expect(streamCustomDirectAgent({ ...baseRequest(), token: '' }))
-        .rejects.toThrow('未登录，无法启动直连 Agent');
-    });
-
-    it('throws on whitespace-only token', async () => {
-      const { streamCustomDirectAgent } = await import('../customDirectAgent');
-      await expect(streamCustomDirectAgent({ ...baseRequest(), token: '   ' }))
-        .rejects.toThrow('未登录，无法启动直连 Agent');
+      await streamCustomDirectAgent({ ...baseRequest(), token });
+      expect(mockFetchAgentPrompt).not.toHaveBeenCalled();
+      expect(mockCustomDirectChatStart).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+        token: '',
+        systemPrompt: expect.stringContaining('eIsland'),
+      }));
     });
 
     it('throws on empty message', async () => {
@@ -368,33 +370,26 @@ describe('customDirectAgent', () => {
   /* ============================================================= */
 
   describe('prompt fetch failure', () => {
-    it('emits error event when prompt fetch fails', async () => {
-      mockFetchAgentPrompt.mockRejectedValueOnce(new Error('network down'));
+    it.each([new Error('network down'), 'string error'])('falls back to the built-in prompt without caching it when fetch fails (%s)', async (failure) => {
+      mockFetchAgentPrompt.mockRejectedValueOnce(failure);
+      mockOnCustomDirectChatEvent.mockImplementation((_sessionId: string, cb: (event: { type: string; payload: unknown }) => void) => {
+        setTimeout(() => cb({ type: 'final', payload: {} }), 0);
+        return vi.fn();
+      });
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
       const { streamCustomDirectAgent } = await import('../customDirectAgent');
       const onEvent = vi.fn();
 
       await streamCustomDirectAgent({ ...baseRequest(), onEvent });
 
-      expect(onEvent).toHaveBeenCalledWith({
-        type: 'error',
-        payload: { code: 'PROMPT_FETCH_FAILED', message: '获取系统提示词失败: network down' },
-      });
-      expect(mockCustomDirectChatStart).not.toHaveBeenCalled();
-    });
+      expect(onEvent).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+      expect(mockCustomDirectChatStart).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+        systemPrompt: expect.stringContaining('eIsland'),
+      }));
 
-    it('emits error event with string coercion when prompt fetch throws non-Error', async () => {
-      mockFetchAgentPrompt.mockRejectedValueOnce('string error');
-
-      const { streamCustomDirectAgent } = await import('../customDirectAgent');
-      const onEvent = vi.fn();
-
-      await streamCustomDirectAgent({ ...baseRequest(), onEvent });
-
-      expect(onEvent).toHaveBeenCalledWith({
-        type: 'error',
-        payload: { code: 'PROMPT_FETCH_FAILED', message: '获取系统提示词失败: string error' },
-      });
+      await streamCustomDirectAgent(baseRequest());
+      expect(mockFetchAgentPrompt).toHaveBeenCalledTimes(2);
     });
   });
 

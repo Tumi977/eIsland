@@ -140,11 +140,17 @@ describe('ollamaLocalAgent', () => {
   });
 
   describe('streamOllamaLocalAgent', () => {
-    it('throws on empty token', async () => {
+    it('starts without login using the built-in prompt', async () => {
+      mockFetchAgentPrompt.mockClear();
+      mockOllamaChatStart.mockClear();
       const { streamOllamaLocalAgent } = await import('../ollamaLocalAgent');
-      await expect(
-        streamOllamaLocalAgent({ token: '', message: 'hello', model: 'test' }),
-      ).rejects.toThrow('未登录，无法启动本地 Agent');
+      await streamOllamaLocalAgent({ token: '', message: 'hello', model: 'test', workspaces: ['C:/work'] });
+      expect(mockFetchAgentPrompt).not.toHaveBeenCalled();
+      expect(mockOllamaChatStart).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
+        token: '',
+        systemPrompt: expect.stringContaining('C:/work'),
+        workspaces: ['C:/work'],
+      }));
     });
 
     it('throws on empty message', async () => {
@@ -154,11 +160,12 @@ describe('ollamaLocalAgent', () => {
       ).rejects.toThrow('message 不能为空');
     });
 
-    it('throws when not pro user', async () => {
+    it('allows non-pro users and uses the server prompt', async () => {
+      mockFetchAgentPrompt.mockResolvedValue({ systemPrompt: 'server prompt' });
+      mockOllamaChatStart.mockClear();
       const { streamOllamaLocalAgent } = await import('../ollamaLocalAgent');
-      await expect(
-        streamOllamaLocalAgent({ token: NON_PRO_TOKEN, message: 'hello', model: 'test' }),
-      ).rejects.toThrow('本地模型仅 Pro 用户可用');
+      await streamOllamaLocalAgent({ token: NON_PRO_TOKEN, message: 'hello', model: 'test' });
+      expect(mockOllamaChatStart).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ systemPrompt: 'server prompt' }));
     });
 
     it('fetches prompt and starts chat for pro user', async () => {

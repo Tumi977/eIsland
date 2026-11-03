@@ -36,6 +36,8 @@ type AiConfig = ReturnType<typeof useIslandStore.getState>['aiConfig'];
 interface AgentRouting {
   isOllama: boolean;
   useCustomApi: boolean;
+  /** 自定义 API 是否走本机直连（非 Pro 用户不可使用服务器转发） */
+  customApiDirect: boolean;
   selectedModel: string;
   selectedProvider: 'ollama' | 'custom' | 'mimo' | 'MiniMax' | 'deepseek';
   agentMode: string;
@@ -60,7 +62,8 @@ export function resolveAgentRouting(aiConfig: AiConfig, token: string): AgentRou
   const isCustomApi = aiConfig.model === 'custom-api';
   const userRole = getRoleFromToken(token);
   const isProUser = userRole === 'pro' || userRole === 'admin';
-  const useCustomApi = isCustomApi && isProUser && Boolean(aiConfig.apiKey?.trim() && aiConfig.endpoint?.trim());
+  const useCustomApi = isCustomApi && Boolean(aiConfig.apiKey?.trim() && aiConfig.endpoint?.trim());
+  const customApiDirect = useCustomApi && (!isProUser || aiConfig.customApiMode === 'direct');
   const selectedModelBase = isOllama
     ? 'ollama'
     : useCustomApi
@@ -83,6 +86,7 @@ export function resolveAgentRouting(aiConfig: AiConfig, token: string): AgentRou
   return {
     isOllama,
     useCustomApi,
+    customApiDirect,
     selectedModel,
     selectedProvider,
     agentMode: loadAgentMode(),

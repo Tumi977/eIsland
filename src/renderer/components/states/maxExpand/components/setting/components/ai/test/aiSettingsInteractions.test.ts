@@ -144,8 +144,7 @@ beforeEach(() => {
     SettingsFieldComponent: () => createElement('input'),
     aiSettingsPages: ['general', 'r1pxc', 'ollama', 'orb-style'],
     aiSettingsPageLabels: {},
-    setAiSettingsPage: vi.fn(),
-    isProUser: true
+    setAiSettingsPage: vi.fn()
   };
   setConfig.mockImplementation((value) => {
     props.aiConfig = {
@@ -307,7 +306,6 @@ describe('远端模型实际请求和选择', () => {
 describe('本地Ollama实际服务动作', () => {
   it.each(['success', 'empty', 'failed'])('读取本地模型%s并选择芯片', async (mode) => {
     props.aiSettingsPage = 'ollama';
-    props.isProUser = false;
     if (mode === 'empty') local.models.mockResolvedValue([]);
     if (mode === 'failed') local.models.mockRejectedValue(new Error('offline'));
     await click('settings.ai.ollamaFetchBtn');

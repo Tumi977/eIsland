@@ -115,6 +115,10 @@ export interface ChatState {
   selectedModel: string;
   isOllamaModel: boolean;
   isCustomApiModel: boolean;
+  /** 自定义 API 是否走本机直连（非 Pro 用户不可使用服务器转发） */
+  customApiDirect: boolean;
+  /** 当前模型是否在本机运行（Ollama 或自定义 API 直连），本机模型无需登录 */
+  isLocalModelSelected: boolean;
   customApiDisplayLabel: string;
   ollamaDisplayLabel: string;
   selectedProvider: string;
@@ -269,7 +273,7 @@ export function useChatState(): ChatState {
     const m = availableModels.includes(aiConfig.model as (typeof availableModels)[number])
       ? aiConfig.model
       : 'deepseek-v4-flash';
-    if (m === 'custom-api' && (!isProUser || !hasCustomApiCredentials)) return 'deepseek-v4-flash';
+    if (m === 'custom-api' && !hasCustomApiCredentials) return 'deepseek-v4-flash';
     if (!isProUser && (m === 'deepseek-v4-pro'
       || m === 'mimo-v2.5-pro'
       || m === 'MiniMax-M2.7-highspeed'
@@ -278,6 +282,8 @@ export function useChatState(): ChatState {
   })();
   const isOllamaModel = selectedModel === 'ollama';
   const isCustomApiModel = selectedModel === 'custom-api';
+  const customApiDirect = !isProUser || aiConfig.customApiMode === 'direct';
+  const isLocalModelSelected = isOllamaModel || (isCustomApiModel && customApiDirect);
   const customApiDisplayLabel = aiConfig.customApiModel
     ? `custom-api (${aiConfig.customApiModel})`
     : 'custom-api';
@@ -592,6 +598,7 @@ export function useChatState(): ChatState {
     pendingQuote, setPendingQuote,
     hasLoginSession, userAvatarUrl,
     selectedModel, isOllamaModel, isCustomApiModel,
+    customApiDirect, isLocalModelSelected,
     customApiDisplayLabel, ollamaDisplayLabel,
     selectedProvider, modelToggleIcon,
     hasCustomApiCredentials,

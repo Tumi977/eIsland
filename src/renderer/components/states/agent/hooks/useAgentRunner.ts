@@ -80,10 +80,13 @@ export function useAgentRunner(options: UseAgentRunnerOptions): void {
   } = options;
 
   useEffect(() => {
-    const token = readLocalToken();
-    if (!token || !agentPrompt.trim()) {
+    const token = readLocalToken() ?? '';
+    // Ollama 与自定义 API 直连在本机运行，无需登录
+    const routing = resolveAgentRouting(aiConfig, token);
+    const needsLogin = !routing.isOllama && !routing.customApiDirect;
+    if ((needsLogin && !token) || !agentPrompt.trim()) {
       setPhase('error');
-      setErrorMsg(!token ? '请先登录' : '没有输入内容');
+      setErrorMsg(needsLogin && !token ? '请先登录' : '没有输入内容');
       return;
     }
     tokenRef.current = token;
@@ -107,10 +110,11 @@ export function useAgentRunner(options: UseAgentRunnerOptions): void {
         const {
           isOllama,
           useCustomApi,
+          customApiDirect,
           selectedModel,
           selectedProvider,
           agentMode,
-        } = resolveAgentRouting(aiConfig, token);
+        } = routing;
 
         await useIslandStore.getState().ensureAiChatReady();
         if (!active) return;
@@ -157,7 +161,7 @@ export function useAgentRunner(options: UseAgentRunnerOptions): void {
             signal: controller.signal,
             onEvent: handleEvent,
           });
-        } else if (useCustomApi && aiConfig.customApiMode === 'direct') {
+        } else if (customApiDirect) {
           const directModelName = aiConfig.customApiModel?.trim() || 'gpt-4o-mini';
           const directTemperature = aiConfig.deepseekReasoningEffort === 'low' ? 0.3 : aiConfig.deepseekReasoningEffort === 'high' ? 1.0 : 0.6;
           await streamCustomDirectAgent({

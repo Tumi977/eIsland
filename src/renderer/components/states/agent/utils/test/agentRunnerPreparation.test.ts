@@ -140,14 +140,35 @@ describe('resolveAgentRouting', () => {
     expect(result.selectedModel).toBe('gpt-4o');
   });
 
-  it('falls back to non-custom when user is not pro even with custom-api model', () => {
+  it('allows custom-api for non-pro users and forces direct mode', () => {
     getRoleFromTokenMock.mockReturnValue('user');
     const result = resolveAgentRouting(
-      makeAiConfig({ model: 'custom-api', apiKey: 'key', endpoint: 'https://api.example.com' }),
+      makeAiConfig({ model: 'custom-api', apiKey: 'key', endpoint: 'https://api.example.com', customApiMode: 'relay' }),
       'token',
     );
-    expect(result.useCustomApi).toBe(false);
-    expect(result.selectedProvider).toBe('deepseek');
+    expect(result.useCustomApi).toBe(true);
+    expect(result.customApiDirect).toBe(true);
+    expect(result.selectedProvider).toBe('custom');
+  });
+
+  it('allows custom-api without login and uses direct mode', () => {
+    getRoleFromTokenMock.mockReturnValue(null);
+    const result = resolveAgentRouting(
+      makeAiConfig({ model: 'custom-api', apiKey: 'key', endpoint: 'https://api.example.com' }),
+      '',
+    );
+    expect(result.useCustomApi).toBe(true);
+    expect(result.customApiDirect).toBe(true);
+  });
+
+  it('keeps relay mode for pro users who chose relay', () => {
+    getRoleFromTokenMock.mockReturnValue('pro');
+    const result = resolveAgentRouting(
+      makeAiConfig({ model: 'custom-api', apiKey: 'key', endpoint: 'https://api.example.com', customApiMode: 'relay' }),
+      'token',
+    );
+    expect(result.useCustomApi).toBe(true);
+    expect(result.customApiDirect).toBe(false);
   });
 
   it('falls back to non-custom when apiKey is missing', () => {

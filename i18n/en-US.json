@@ -1057,7 +1057,9 @@
       "entryTitle": "Sign in to use the AI assistant",
       "gotoLogin": "Go to Login",
       "gotoRegister": "Go to Register",
-      "hint": "mihtnelis Agent provides AI chat, tool calling, and knowledge retrieval for signed-in users."
+      "hint": "mihtnelis Agent provides AI chat, tool calling, and knowledge retrieval for signed-in users.",
+      "useLocalModel": "Use Local Model",
+      "localModelHint": "Ollama local models and direct custom API work without signing in (configure them in Settings → AI)."
     },
     "input": {
       "generatingPlaceholder": "Generating...",

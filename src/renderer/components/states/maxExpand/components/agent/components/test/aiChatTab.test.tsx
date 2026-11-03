@@ -43,14 +43,14 @@ import { AssistantMarkdown } from '../AssistantMarkdown';
 import { WebAccessPanel, LocalToolAccessPanel } from '../WebAccessPanel';
 interface MessageFixture { role: string; content: string; attachments?: { name: string }[]; }
 interface PromptFixture { sessionId: string; url?: string; message?: string; tool?: string; }
-const state = vi.hoisted(() => ({ hasLoginSession: true, agentMode: 'mihtnelis', currentAgentModeConfig: { label: 'Island' }, dominantColor: [0, 200, 0], orderedSessions: [] as { id: string; title: string; updatedAt: number }[], aiChatMessages: [] as MessageFixture[], aiChatStreaming: false, aiWebAccessPrompt: null as PromptFixture | null, aiLocalToolAccessPrompt: null as PromptFixture | null, emptyGreeting: 'Welcome', aiConfig: {}, activeAiChatSessionId: 'active', aiChatSwitchingView: null as { sessionId: string; messages: MessageFixture[] } | null, inputRef: { current: { focus: vi.fn() } }, setLogin: vi.fn(), setRegister: vi.fn(), handleCreateNewChat: vi.fn(), getSessionCardState: () => 'idle', switchAiChatSession: vi.fn().mockResolvedValue(undefined), setAiChatStreaming: vi.fn(), setResolvingWebAccessDecision: vi.fn(), setResolvingLocalToolAccessDecision: vi.fn(), setPendingQuote: vi.fn(), deleteAiChatSession: vi.fn().mockResolvedValue(undefined) }));
+const state = vi.hoisted(() => ({ hasLoginSession: true, isLocalModelSelected: false, hasCustomApiCredentials: false, setAiConfig: vi.fn(), agentMode: 'mihtnelis', currentAgentModeConfig: { label: 'Island' }, dominantColor: [0, 200, 0], orderedSessions: [] as { id: string; title: string; updatedAt: number }[], aiChatMessages: [] as MessageFixture[], aiChatStreaming: false, aiWebAccessPrompt: null as PromptFixture | null, aiLocalToolAccessPrompt: null as PromptFixture | null, emptyGreeting: 'Welcome', aiConfig: {}, activeAiChatSessionId: 'active', aiChatSwitchingView: null as { sessionId: string; messages: MessageFixture[] } | null, inputRef: { current: { focus: vi.fn() } }, setLogin: vi.fn(), setRegister: vi.fn(), handleCreateNewChat: vi.fn(), getSessionCardState: () => 'idle', switchAiChatSession: vi.fn().mockResolvedValue(undefined), setAiChatStreaming: vi.fn(), setResolvingWebAccessDecision: vi.fn(), setResolvingLocalToolAccessDecision: vi.fn(), setPendingQuote: vi.fn(), deleteAiChatSession: vi.fn().mockResolvedValue(undefined) }));
 const send = vi.hoisted(() => ({ handleSend: vi.fn(), navigateToSettingsTab: vi.fn(), handleResolveWebAccess: vi.fn(), handleResolveLocalToolAccess: vi.fn() }));
 vi.mock('../../../../../../../store/slices', () => ({ default: vi.fn() }));
 vi.mock('../../hooks/useChatState', () => ({ useChatState: () => state, SESSION_STREAMING_IDS: new Set(['other']) }));
 vi.mock('../../hooks/useChatSend', () => ({ useChatSend: () => send }));
 vi.mock('../MessageTimeline', () => ({ MessageTimeline: () => null }));
 describe('AiChatTab', () => {
-  beforeEach(() => { state.hasLoginSession = true; state.aiChatSwitchingView = null; state.agentMode = 'mihtnelis'; state.orderedSessions = []; state.aiChatMessages = []; state.aiChatStreaming = false; state.aiWebAccessPrompt = null; state.aiLocalToolAccessPrompt = null; });
+  beforeEach(() => { state.hasLoginSession = true; state.isLocalModelSelected = false; state.hasCustomApiCredentials = false; state.aiChatSwitchingView = null; state.agentMode = 'mihtnelis'; state.orderedSessions = []; state.aiChatMessages = []; state.aiChatStreaming = false; state.aiWebAccessPrompt = null; state.aiLocalToolAccessPrompt = null; });
   afterEach(() => { vi.unstubAllGlobals(); });
   it('offers login and registration before rendering the authenticated chat', () => {
     state.hasLoginSession = false;
@@ -58,6 +58,15 @@ describe('AiChatTab', () => {
     expect(nodes(tree, ChatInputBar)).toHaveLength(0);
     trigger(tree, '.settings-user-primary-btn', 'onClick'); trigger(tree, '.settings-user-secondary-btn', 'onClick');
     expect(state.setLogin).toHaveBeenCalledOnce(); expect(state.setRegister).toHaveBeenCalledOnce();
+    (value(tree, '.settings-user-secondary-btn', 'onClick', 1) as () => void)();
+    expect(state.setAiConfig).toHaveBeenLastCalledWith({ model: 'ollama' });
+    state.hasCustomApiCredentials = true;
+    (value(render(Component), '.settings-user-secondary-btn', 'onClick', 1) as () => void)();
+    expect(state.setAiConfig).toHaveBeenLastCalledWith({ model: 'custom-api' });
+  });
+  it('renders the chat without login when a local model is selected', () => {
+    state.hasLoginSession = false; state.isLocalModelSelected = true;
+    expect(nodes(render(Component), ChatInputBar)).toHaveLength(1);
   });
   it('renders empty greeting, clamps color channels and sends Enter without Shift', () => {
     const tree = render(Component);

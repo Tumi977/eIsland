@@ -24,7 +24,7 @@
  * @author 鸡哥
  */
 
-import { fetchAgentPrompt } from './mihtnelisAgentStream';
+import { fetchLocalAgentPrompt } from './localAgentPrompt';
 import type { MihtnelisAgentStreamEventType } from './types/MihtnelisAgentStreamEvent';
 import type { CustomDirectAgentRequest } from './types/CustomDirectAgentRequest';
 
@@ -43,7 +43,7 @@ function buildPromptCacheKey(
 }
 
 /**
- * 从服务端获取系统提示词（带缓存），复用 ollama 的提示词路径。
+ * 获取系统提示词：服务端结果带缓存，不可用时使用内置精简提示词。
  */
 async function resolveSystemPrompt(request: CustomDirectAgentRequest): Promise<string> {
   const agentMode = request.agentMode || 'mihtnelis';
@@ -56,14 +56,14 @@ async function resolveSystemPrompt(request: CustomDirectAgentRequest): Promise<s
     return cachedSystemPrompt;
   }
 
-  const resp = await fetchAgentPrompt({
+  const resp = await fetchLocalAgentPrompt({
     token: request.token,
     agentMode,
     snapshotMode,
-    localMode: true,
-    workspaces: workspaces.length > 0 ? workspaces : undefined,
-    skills: Array.isArray(request.skills) && request.skills.length > 0 ? request.skills : undefined,
+    workspaces,
+    skills: request.skills,
   });
+  if (!resp.fromServer) return resp.systemPrompt;
 
   cachedSystemPrompt = resp.systemPrompt;
   cachedPromptKey = key;
@@ -81,10 +81,7 @@ export function clearCustomDirectPromptCache(): void {
  * 事件通过 onEvent 回调推送，格式与 MihtnelisAgentStreamEvent 兼容。
  */
 export async function streamCustomDirectAgent(request: CustomDirectAgentRequest): Promise<void> {
-  const token = request.token?.trim();
-  if (!token) {
-    throw new Error('未登录，无法启动直连 Agent');
-  }
+  const token = request.token?.trim() ?? '';
   const message = request.message?.trim();
   if (!message) {
     throw new Error('message 不能为空');
@@ -94,17 +91,7 @@ export async function streamCustomDirectAgent(request: CustomDirectAgentRequest)
   }
 
   // 1. 获取系统提示词
-  let systemPrompt: string;
-  try {
-    systemPrompt = await resolveSystemPrompt(request);
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    request.onEvent?.({
-      type: 'error',
-      payload: { code: 'PROMPT_FETCH_FAILED', message: `获取系统提示词失败: ${errMsg}` },
-    });
-    return;
-  }
+  const systemPrompt = await resolveSystemPrompt(request);
 
   // 2. 生成会话 ID
   const sessionId = `custom-direct-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -188,6 +175,7 @@ export async function streamCustomDirectAgent(request: CustomDirectAgentRequest)
       baseUrl: request.baseUrl,
       apiKey: request.apiKey,
       temperature: request.temperature,
+      workspaces: request.workspaces,
     });
   } catch (err) {
     unsubscribe();

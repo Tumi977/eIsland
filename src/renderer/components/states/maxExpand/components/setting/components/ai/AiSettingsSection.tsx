@@ -64,7 +64,6 @@ interface AiSettingsSectionProps {
   aiSettingsPages: AiSettingsPageKey[];
   aiSettingsPageLabels: Record<string, string>;
   setAiSettingsPage: (page: AiSettingsPageKey) => void;
-  isProUser: boolean;
 }
 
 /**
@@ -83,7 +82,6 @@ export function AiSettingsSection({
   aiSettingsPages,
   aiSettingsPageLabels,
   setAiSettingsPage,
-  isProUser,
 }: AiSettingsSectionProps): ReactElement {
   const { t } = useTranslation();
   const [pageNavigationExpanded, setPageNavigationExpanded] = useState(false);
@@ -237,10 +235,9 @@ export function AiSettingsSection({
   const renderGeneralPage = (): ReactElement => (
     <div className="settings-cards">
       {/* 卡片 1:模型凭据 */}
-      <div className="settings-card" style={isProUser ? undefined : { opacity: 0.5, pointerEvents: 'none' }} aria-disabled={!isProUser}>
+      <div className="settings-card">
         <div className="settings-card-header">
           <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <img src={SvgIcon.PRO} alt="PRO" width={16} height={16} style={{ flexShrink: 0 }} />
             {t('settings.ai.credentialsTitle', { defaultValue: '模型凭据' })}
           </div>
           <div className="settings-card-subtitle">{t('settings.ai.credentialsHint', { defaultValue: '用于 Agent 中转调用的自定义 API 凭据（可选）' })}</div>
@@ -435,10 +432,9 @@ export function AiSettingsSection({
 
   const renderOllamaPage = (): ReactElement => (
     <div className="settings-cards">
-      <div className="settings-card" style={isProUser ? undefined : { opacity: 0.5, pointerEvents: 'none' }} aria-disabled={!isProUser}>
+      <div className="settings-card">
         <div className="settings-card-header">
           <div className="settings-card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <img src={SvgIcon.PRO} alt="PRO" width={16} height={16} style={{ flexShrink: 0 }} />
             {t('settings.ai.ollamaTitle', { defaultValue: 'Ollama 本地模型' })}
           </div>
           <div className="settings-card-subtitle">{t('settings.ai.ollamaHint', { defaultValue: '配置本地 Ollama 服务地址与默认模型，在模型下拉中选择 ollama 即可使用' })}</div>

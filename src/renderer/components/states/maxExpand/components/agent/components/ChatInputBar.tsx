@@ -221,8 +221,7 @@ export function ChatInputBar(props: ChatInputBarProps): ReactElement {
                         const isPro = m === 'deepseek-v4-pro'
                           || m === 'mimo-v2.5-pro'
                           || m === 'MiniMax-M2.7-highspeed'
-                          || m === 'MiniMax-M2.5-highspeed'
-                          || isOllama;
+                          || m === 'MiniMax-M2.5-highspeed';
                         const disabled = isPro && !isProUser;
                         const icon = isOllama ? SvgIcon.OLLAMA : (m.startsWith('mimo-') ? SvgIcon.MIMO : (isMinimaxModel(m) ? SvgIcon.MINIMAX : SvgIcon.DEEPSEEK));
                         const label = isOllama ? (aiConfig.ollamaModel ? `ollama (${aiConfig.ollamaModel})` : 'ollama') : m;
@@ -247,9 +246,9 @@ export function ChatInputBar(props: ChatInputBarProps): ReactElement {
                       })}
                       <button
                         type="button"
-                        className={`max-expand-chat-model-dropdown-item${isCustomApiModel ? ' active' : ''}${(!isProUser || !hasCustomApiCredentials) ? ' disabled' : ''}`}
+                        className={`max-expand-chat-model-dropdown-item${isCustomApiModel ? ' active' : ''}${!hasCustomApiCredentials ? ' disabled' : ''}`}
                         onClick={() => {
-                          if (!isProUser || !hasCustomApiCredentials) return;
+                          if (!hasCustomApiCredentials) return;
                           setAiConfig({ model: 'custom-api' });
                           setShowModelDropdown(false);
                         }}
@@ -258,7 +257,6 @@ export function ChatInputBar(props: ChatInputBarProps): ReactElement {
                           <img style={{ width: 14, height: 14 }} src={SvgIcon.AI} alt="" />
                           {customApiDisplayLabel}
                         </span>
-                        <img className="max-expand-chat-model-dropdown-pro-icon" src={SvgIcon.PRO} alt="PRO" />
                       </button>
                     </div>
                   )}
@@ -307,14 +305,14 @@ export function ChatInputBar(props: ChatInputBarProps): ReactElement {
                   <span style={{ fontSize: 12, opacity: 0.8 }}>{t('aiChat.modelCard.customApiMode', { defaultValue: '调用模式' })}</span>
                   <select
                     className="max-expand-chat-web-access-policy-select"
-                    value={aiConfig.customApiMode || 'relay'}
+                    value={isProUser ? (aiConfig.customApiMode || 'relay') : 'direct'}
                     onChange={(event) => {
                       setAiConfig({ customApiMode: event.target.value as 'relay' | 'direct' });
                     }}
                     title={t('aiChat.modelCard.customApiModeTitle', { defaultValue: '选择自定义 API 调用模式' })}
                     aria-label={t('aiChat.modelCard.customApiMode', { defaultValue: '调用模式' })}
                   >
-                    <option value="relay">{t('aiChat.modelCard.customApiModeRelay', { defaultValue: '服务器转发' })}</option>
+                    <option value="relay" disabled={!isProUser}>{t('aiChat.modelCard.customApiModeRelay', { defaultValue: '服务器转发' })}</option>
                     <option value="direct">{t('aiChat.modelCard.customApiModeDirect', { defaultValue: '直连' })}</option>
                   </select>
                 </div>

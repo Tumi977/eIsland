@@ -212,6 +212,26 @@ describe('useAgentRunner real state and helpers', () => {
     expect(state.errorMsg).toBe(kind === 'missing-token' ? '请先登录' : '没有输入内容');
     expect(leaves.cloud).not.toHaveBeenCalled();
   });
+  it.each(['ollama', 'direct'] as const)('%s route runs without login', async (kind) => {
+    storage.delete('user-account-token');
+    configure({
+      model: kind === 'ollama' ? 'ollama' : 'custom-api',
+      apiKey: 'key',
+      endpoint: 'https://example.invalid/v1',
+      customApiMode: 'relay'
+    });
+    drive(async (request) => {
+      emit(request, 'chunk', {
+        text: 'answer'
+      });
+      emit(request, 'final', {});
+      await Promise.resolve();
+    });
+    const state = await mount();
+    expect(state.errorMsg).toBe('');
+    expect(kind === 'ollama' ? leaves.ollama : leaves.direct).toHaveBeenCalled();
+    expect(leaves.cloud).not.toHaveBeenCalled();
+  });
   it.each(['ollama', 'direct', 'relay', 'cloud'] as const)('%s route calls real preparation, event handler and persisted transcript', async (kind) => {
     const models = {
       ollama: 'ollama',

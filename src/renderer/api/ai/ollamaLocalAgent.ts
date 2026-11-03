@@ -24,7 +24,7 @@
  * @author 鸡哥
  */
 
-import { fetchAgentPrompt } from './mihtnelisAgentStream';
+import { fetchLocalAgentPrompt } from './localAgentPrompt';
 import type { MihtnelisAgentStreamEventType } from './types/MihtnelisAgentStreamEvent';
 import type { OllamaLocalAgentRequest } from './types/OllamaLocalAgentRequest';
 
@@ -32,26 +32,6 @@ export type { OllamaLocalAgentRequest };
 
 let cachedSystemPrompt: string | null = null;
 let cachedPromptKey = '';
-
-function getRoleFromToken(token: string | null | undefined): string | null {
-  if (!token) return null;
-  const rawToken = token.trim().replace(/^bearer\s+/i, '');
-  const parts = rawToken.split('.');
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = payload.padEnd(Math.ceil(payload.length / 4) * 4, '=');
-    const decoded = JSON.parse(atob(padded)) as { role?: unknown };
-    return typeof decoded.role === 'string' ? decoded.role.trim().toLowerCase() : null;
-  } catch {
-    return null;
-  }
-}
-
-function isProToken(token: string | null | undefined): boolean {
-  const role = getRoleFromToken(token);
-  return role === 'pro';
-}
 
 function buildPromptCacheKey(
   agentMode: string,
@@ -63,7 +43,7 @@ function buildPromptCacheKey(
 }
 
 /**
- * 从服务端获取系统提示词（带缓存）。
+ * 获取系统提示词：服务端结果带缓存，不可用时使用内置精简提示词。
  */
 async function resolveSystemPrompt(request: OllamaLocalAgentRequest): Promise<string> {
   const agentMode = request.agentMode || 'mihtnelis';
@@ -76,14 +56,14 @@ async function resolveSystemPrompt(request: OllamaLocalAgentRequest): Promise<st
     return cachedSystemPrompt;
   }
 
-  const resp = await fetchAgentPrompt({
+  const resp = await fetchLocalAgentPrompt({
     token: request.token,
     agentMode,
     snapshotMode,
-    localMode: true,
-    workspaces: workspaces.length > 0 ? workspaces : undefined,
-    skills: Array.isArray(request.skills) && request.skills.length > 0 ? request.skills : undefined,
+    workspaces,
+    skills: request.skills,
   });
+  if (!resp.fromServer) return resp.systemPrompt;
 
   cachedSystemPrompt = resp.systemPrompt;
   cachedPromptKey = key;
@@ -135,30 +115,14 @@ export async function detectOllamaBaseUrl(): Promise<string | null> {
  * 事件通过 onEvent 回调推送，格式与 MihtnelisAgentStreamEvent 兼容。
  */
 export async function streamOllamaLocalAgent(request: OllamaLocalAgentRequest): Promise<void> {
-  const token = request.token?.trim();
-  if (!token) {
-    throw new Error('未登录，无法启动本地 Agent');
-  }
-  if (!isProToken(token)) {
-    throw new Error('本地模型仅 Pro 用户可用');
-  }
+  const token = request.token?.trim() ?? '';
   const message = request.message?.trim();
   if (!message) {
     throw new Error('message 不能为空');
   }
 
   // 1. 获取系统提示词
-  let systemPrompt: string;
-  try {
-    systemPrompt = await resolveSystemPrompt(request);
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    request.onEvent?.({
-      type: 'error',
-      payload: { code: 'PROMPT_FETCH_FAILED', message: `获取系统提示词失败: ${errMsg}` },
-    });
-    return;
-  }
+  const systemPrompt = await resolveSystemPrompt(request);
 
   // 2. 生成会话 ID
   const sessionId = `ollama-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -242,6 +206,7 @@ export async function streamOllamaLocalAgent(request: OllamaLocalAgentRequest): 
       context: request.context,
       baseUrl: request.baseUrl,
       temperature: request.temperature,
+      workspaces: request.workspaces,
     });
   } catch (err) {
     unsubscribe();

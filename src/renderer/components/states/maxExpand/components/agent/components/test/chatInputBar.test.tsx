@@ -64,6 +64,16 @@ describe('ChatInputBar', () => {
     expect(props.setAiConfig).toHaveBeenLastCalledWith({ model: 'custom-api' });
     expect(props.setShowModelDropdown).toHaveBeenCalledWith(false);
   });
+  it('lets non-pro users pick local models and forces direct custom API mode', () => {
+    const setAiConfig = vi.fn();
+    const tree = render(Component, { ...props, setAiConfig, showModelDropdown: true, isProUser: false, hasCustomApiCredentials: true });
+    (value(tree, '.max-expand-chat-model-dropdown-item', 'onClick', 8) as () => void)();
+    expect(setAiConfig).toHaveBeenLastCalledWith({ model: 'ollama' });
+    (value(tree, '.max-expand-chat-model-dropdown-item', 'onClick', 9) as () => void)();
+    expect(setAiConfig).toHaveBeenLastCalledWith({ model: 'custom-api' });
+    const custom = render(Component, { ...props, showModelCard: true, isCustomApiModel: true, isProUser: false, aiConfig: { ...props.aiConfig, customApiMode: 'relay' } });
+    expect(nodes(custom, 'select').some((node) => node.props.value === 'direct')).toBe(true);
+  });
   it('normalizes reasoning changes, focus mode and context limits', () => {
     const tree = render(Component, { ...props, showContextDropdown: true });
     trigger(tree, 'select', 'onChange', { target: { value: 'invalid' } });
