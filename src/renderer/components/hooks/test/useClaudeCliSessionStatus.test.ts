@@ -116,6 +116,31 @@ describe('CLI原生状态与真实副作用', () => {
     claude?.({ sessions: [{ id: 'a', phase: 'waiting_permission', pendingPermission: { id: 'old' } }, { id: 'b', phase: 'waiting_permission', pendingPermission: { id: 'new' } }] }); await settleBackground();
     expect(play).toHaveBeenCalledOnce(); expect(useIslandStore.getState().state).toBe('cli');
   });
+  it.each(['claude', 'codex'] as const)('%s同一会话每轮完成都放大提醒并带上最后回复，同一完成事件不重复提醒', async (provider) => {
+    const emit = () => (provider === 'claude' ? claude : codex);
+    const session = (events: Array<{ id: string; eventName: string; createdAt: number; summary?: string }>) => ({ sessions: [{ id: 'session', title: 'eIsland', phase: 'idle' as const, events }] });
+    (provider === 'claude' ? cliIpc.claudeCodeStatusGet : cliIpc.codexStatusGet).mockResolvedValue(session([{ id: 'stop-old', eventName: 'Stop', createdAt: Date.now() }]));
+    await mount();
+    expect(useIslandStore.getState().notification).toEqual({ title: '', body: '' });
+    emit()?.(session([{ id: 'stop-new', eventName: 'Stop', createdAt: Date.now(), summary: '已修复\n全部测试通过' }, { id: 'stop-old', eventName: 'Stop', createdAt: Date.now() - 1000 }]));
+    await settleBackground();
+    expect(useIslandStore.getState().notification).toMatchObject({ title: 'notification.cliTaskCompleted.title', body: 'eIsland：已修复 全部测试通过', type: 'cli-session-detected', cliProvider: provider });
+    useIslandStore.setState({ state: 'idle', notification: { title: '', body: '' } });
+    emit()?.(session([{ id: 'stop-new', eventName: 'Stop', createdAt: Date.now() }]));
+    emit()?.(session([{ id: 'stop-stale', eventName: 'Stop', createdAt: Date.now() - 10 * 60 * 1000 }]));
+    await settleBackground();
+    expect(useIslandStore.getState().notification).toEqual({ title: '', body: '' });
+    emit()?.(session([{ id: 'stop-failed', eventName: 'StopFailure', createdAt: Date.now(), summary: '本轮异常结束' }]));
+    await settleBackground();
+    expect(useIslandStore.getState().notification).toMatchObject({ title: 'notification.cliTaskCompleted.failedTitle', body: 'notification.cliTaskCompleted.emptyBody' });
+  });
+  it('已在CLI视图时任务完成不弹提醒', async () => {
+    const session = (id: string) => ({ sessions: [{ id: 'session', phase: 'idle' as const, events: [{ id, eventName: 'Stop', createdAt: Date.now(), summary: 'done' }] }] });
+    cliIpc.claudeCodeStatusGet.mockResolvedValue(session('stop-old')); await mount();
+    useIslandStore.setState({ state: 'cli' });
+    claude?.(session('stop-new')); await settleBackground();
+    expect(useIslandStore.getState().notification).toEqual({ title: '', body: '' });
+  });
   it('播放失败使用备用音源并处理备用再次失败', async () => {
     await mount(); play.mockRejectedValue(new Error('autoplay-blocked'));
     claude?.(snapshot()); await settleBackground();

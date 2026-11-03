@@ -28,6 +28,7 @@ import type { ReactElement } from 'react';
 import type { useIdle } from '../hooks/useIdle';
 import { SvgIcon } from '../../../../utils/SvgIcon';
 import { abbreviateWeatherDescription } from '../../../../utils/weatherText';
+import { CliAgentBadges } from './CliAgentBadges';
 
 type IdleFormProps = ReturnType<typeof useIdle>;
 
@@ -128,7 +129,10 @@ export function IdleForm(props: IdleFormProps): ReactElement {
               </span>
             </div>
           </div>
-          {renderStatusInfo(12)}
+          <div className="flex items-center gap-2">
+            {renderStatusInfo(12)}
+            <CliAgentBadges />
+          </div>
         </>
       ) : (
         <>
@@ -140,7 +144,10 @@ export function IdleForm(props: IdleFormProps): ReactElement {
               {dayStr}
             </span>
           </div>
-          {renderStatusInfo(15)}
+          <div className="flex items-center gap-2">
+            {renderStatusInfo(15)}
+            <CliAgentBadges />
+          </div>
         </>
       )}
     </div>

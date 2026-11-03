@@ -30,6 +30,7 @@ import { useShallow } from 'zustand/react/shallow';
 import useIslandStore from '../store/isLandStore';
 import { DynamicIslandBackground } from './components/DynamicIslandBackground';
 import { DynamicIslandStateContent } from './components/DynamicIslandStateContent';
+import { IslandMinimizeButton } from './components/IslandMinimizeButton';
 import IslandContentTransition from './components/islandContentTransition';
 import MaxExpandTransitionLoading from './states/maxExpand/maxExpandTransitionLoading';
 import { ExpandedTransitionLoading } from './states/expand';
@@ -111,6 +112,7 @@ function DynamicIsland(): JSX.Element {
           notification={notification}
         />
       </IslandContentTransition>
+      <IslandMinimizeButton state={state} />
     </div>
   );
 }

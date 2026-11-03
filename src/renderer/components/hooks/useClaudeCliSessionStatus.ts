@@ -31,9 +31,11 @@ import { readEffectiveAudioVolume } from '../../utils/audio/volume';
 import useIslandStore from '../../store/isLandStore';
 import type { CliProvider } from '../../store/types';
 import { AgentIcon } from '../../utils/SvgIcon';
+import { findNewCliCompletion, latestStopEvents } from '../utils/cliTaskCompletion';
+import type { CliCompletionEvent } from '../utils/cliTaskCompletion';
 
 interface CliStatusSnapshot {
-  sessions: Array<{ id: string; phase: string; pendingPermission?: { id: string } | null }>;
+  sessions: Array<{ id: string; title?: string; phase: string; pendingPermission?: { id: string } | null; events?: CliCompletionEvent[] }>;
   events?: Array<{ id: string; eventName?: string }>;
 }
 
@@ -42,6 +44,8 @@ interface ProviderTracker {
   sessionIds: Set<string>;
   topEventId: string | null;
   permissionIds: Set<string>;
+  /** 各会话最新的本轮结束事件 ID，用于识别新完成的任务 */
+  stopEventIds: Map<string, string>;
 }
 
 const createProviderTracker = (): ProviderTracker => ({
@@ -49,6 +53,7 @@ const createProviderTracker = (): ProviderTracker => ({
   sessionIds: new Set(),
   topEventId: null,
   permissionIds: new Set(),
+  stopEventIds: new Map(),
 });
 
 /**
@@ -87,7 +92,7 @@ export function useClaudeCliSessionStatus(): {
       const hasNewSessionId = [...sessionIds].some((id) => !tracker.sessionIds.has(id));
 
       if (tracker.initialized) {
-        [...pendingIds].some((id) => {
+        const raisedPermission = [...pendingIds].some((id) => {
           if (tracker.permissionIds.has(id)) return false;
           playNotificationSoundOnce();
           const store = useIslandStore.getState();
@@ -101,7 +106,8 @@ export function useClaudeCliSessionStatus(): {
         });
 
         const hasNewSessionStart = Boolean(topEventId && topEventId !== tracker.topEventId && isSessionStartEvent);
-        if (hasNewSessionId || hasNewSessionStart) {
+        const raisedSessionNotice = hasNewSessionId || hasNewSessionStart;
+        if (raisedSessionNotice) {
           const store = useIslandStore.getState();
           const launcherVisible = store.maxExpandAppModeEnabled && store.maxExpandLauncherVisible;
           const inCliView = store.state === 'cli' || (store.state === 'maxExpand' && !launcherVisible && store.maxExpandTab === 'cli');
@@ -128,8 +134,32 @@ export function useClaudeCliSessionStatus(): {
             });
           }
         }
+
+        // 每轮任务完成都放大提醒一次（同一会话继续对话也会提醒），并带上最后一段回复
+        const completion = findNewCliCompletion(snapshot.sessions, tracker.stopEventIds, Date.now());
+        if (completion && !raisedPermission && !raisedSessionNotice) {
+          const store = useIslandStore.getState();
+          const launcherVisible = store.maxExpandAppModeEnabled && store.maxExpandLauncherVisible;
+          const inCliView = store.state === 'cli' || (store.state === 'maxExpand' && !launcherVisible && store.maxExpandTab === 'cli');
+          if (!inCliView) {
+            const providerName = provider === 'codex' ? 'Codex' : 'Claude Code';
+            playNotificationSoundOnce();
+            store.setNotification({
+              title: completion.failed
+                ? t('notification.cliTaskCompleted.failedTitle', { defaultValue: '{{provider}} 任务异常结束', provider: providerName })
+                : t('notification.cliTaskCompleted.title', { defaultValue: '{{provider}} 任务完成', provider: providerName }),
+              body: completion.report
+                ? `${completion.sessionTitle}：${completion.report}`
+                : t('notification.cliTaskCompleted.emptyBody', { defaultValue: '{{session}} 本轮任务已结束，切换到 CLI 面板查看报告', session: completion.sessionTitle }),
+              icon: provider === 'codex' ? AgentIcon.CODEX : AgentIcon.CLAUDE_KB,
+              type: 'cli-session-detected',
+              cliProvider: provider,
+            });
+          }
+        }
       }
 
+      tracker.stopEventIds = new Map([...latestStopEvents(snapshot.sessions)].map(([sessionId, event]) => [sessionId, event.id]));
       tracker.initialized = true;
       tracker.sessionIds = sessionIds;
       tracker.permissionIds = pendingIds;

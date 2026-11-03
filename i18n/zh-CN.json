@@ -4,7 +4,8 @@
     "errors": {
       "complexMode": "含虚数单位 i 的公式请使用复数界面",
       "rootMountNotFound": "未找到 #root 挂载节点"
-    }
+    },
+    "minimizeIsland": "最小化灵动岛"
   },
   "standalone": {
     "loading": "加载中…",
@@ -664,6 +665,11 @@
       "snooze1h": "稍后 1h",
       "closeAndContinueUpdateCheck": "关闭并继续检查更新",
       "complete": "完成"
+    },
+    "cliTaskCompleted": {
+      "title": "{{provider}} 任务完成",
+      "failedTitle": "{{provider}} 任务异常结束",
+      "emptyBody": "{{session}} 本轮任务已结束，切换到 CLI 面板查看报告"
     }
   },
   "expanded": {
@@ -4818,6 +4824,11 @@
   "idle": {
     "pomodoro": {
       "label": "番茄钟"
+    },
+    "cliAgent": {
+      "running": "{{provider}} 运行中",
+      "waitingPermission": "{{provider}} 等待授权",
+      "idle": "{{provider}} 本轮已完成"
     }
   },
   "oauth": {

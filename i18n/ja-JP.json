@@ -4,7 +4,8 @@
     "errors": {
       "complexMode": "虚数単位 i を含む式は複素数モードで計算してください",
       "rootMountNotFound": "#root マウントノードが見つかりません"
-    }
+    },
+    "minimizeIsland": "アイランドを最小化"
   },
   "standalone": {
     "tabs": {
@@ -664,6 +665,11 @@
       "snooze1h": "1時間後に再通知",
       "closeAndContinueUpdateCheck": "閉じて更新の確認を続ける",
       "complete": "完了"
+    },
+    "cliTaskCompleted": {
+      "title": "{{provider}} タスク完了",
+      "failedTitle": "{{provider}} タスクが異常終了",
+      "emptyBody": "{{session}} の今回のタスクが終了しました。CLI パネルでレポートを確認できます。"
     }
   },
   "expanded": {
@@ -4818,6 +4824,11 @@
   "idle": {
     "pomodoro": {
       "label": "ポモドーロ"
+    },
+    "cliAgent": {
+      "running": "{{provider}} 実行中",
+      "waitingPermission": "{{provider}} 承認待ち",
+      "idle": "{{provider}} 今回のタスク完了"
     }
   },
   "oauth": {

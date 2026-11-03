@@ -209,6 +209,8 @@ describe('Claude managed hook settings', () => {
     expect(installed.hooks!.PreToolUse[0].hooks[0].command).toBe('custom-command');
     expect(installed.hooks!.PermissionRequest[0].hooks[0]).toMatchObject({ timeout: 86400 });
     expect(installed.hooks!.PermissionRequest[0].matcher).toBe('*');
+    // 在 Windows 终端（非 VS Code）里也必须以 node 模式运行 eIsland.exe
+    expect(installed.hooks!.PreToolUse[1].hooks[0].command).toMatch(/^ELECTRON_RUN_AS_NODE=1 "[^"]+" "[^"]+claude-code-hook\.cjs" "PreToolUse" # eisland-claude-code-status$/);
     expect((await service.uninstallHook()).ok).toBe(true);
     const removed = JSON.parse(io.files.get(settings)!) as SettingsFixture;
     expect(removed.env).toEqual({ preserve: 'yes' }); expect(Object.keys(removed.hooks!)).toEqual(['PreToolUse']); service.stop();

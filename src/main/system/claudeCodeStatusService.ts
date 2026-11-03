@@ -418,8 +418,17 @@ function shellQuote(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
 }
 
+/**
+ * 构建托管 hook 命令
+ * @description hook 由 Claude Code 通过 bash（Windows 上为 Git Bash）执行；
+ *   必须显式设置 ELECTRON_RUN_AS_NODE，否则 eIsland.exe 会作为第二个 GUI 实例启动并立即退出，脚本不会执行。
+ *   VS Code 插件进程自带该变量，所以之前仅在 VS Code 中可用、在 Windows 终端中失效。
+ * @param scriptPath - hook 脚本路径
+ * @param eventName - Claude Code hook 事件名
+ * @returns 写入 settings.json 的命令
+ */
 function buildManagedCommand(scriptPath: string, eventName: string): string {
-  return `${shellQuote(process.execPath)} ${shellQuote(scriptPath)} ${shellQuote(eventName)} # ${MANAGED_MARKER}`;
+  return `ELECTRON_RUN_AS_NODE=1 ${shellQuote(process.execPath)} ${shellQuote(scriptPath)} ${shellQuote(eventName)} # ${MANAGED_MARKER}`;
 }
 
 function managedHook(command: string, matcher?: string, timeout?: number): Record<string, unknown> {

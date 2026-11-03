@@ -4,7 +4,8 @@
     "errors": {
       "complexMode": "Use the Complex numbers mode for imaginary values",
       "rootMountNotFound": "#root mount node not found"
-    }
+    },
+    "minimizeIsland": "Minimize island"
   },
   "standalone": {
     "loading": "Loading…",
@@ -664,6 +665,11 @@
       "snooze1h": "Later 1h",
       "closeAndContinueUpdateCheck": "Close and continue update check",
       "complete": "Complete"
+    },
+    "cliTaskCompleted": {
+      "title": "{{provider}} task finished",
+      "failedTitle": "{{provider}} task ended with an error",
+      "emptyBody": "{{session}} finished this turn. Switch to the CLI panel to see the report."
     }
   },
   "expanded": {
@@ -4818,6 +4824,11 @@
   "idle": {
     "pomodoro": {
       "label": "Pomodoro"
+    },
+    "cliAgent": {
+      "running": "{{provider}} is running",
+      "waitingPermission": "{{provider}} is waiting for approval",
+      "idle": "{{provider}} finished this turn"
     }
   },
   "oauth": {

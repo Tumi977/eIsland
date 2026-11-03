@@ -4,7 +4,8 @@
     "errors": {
       "complexMode": "含虛數單位 i 的公式請使用複數介面",
       "rootMountNotFound": "未找到 #root 掛載節點"
-    }
+    },
+    "minimizeIsland": "最小化靈動島"
   },
   "standalone": {
     "tabs": {
@@ -664,6 +665,11 @@
       "snooze1h": "稍後 1h",
       "closeAndContinueUpdateCheck": "關閉並繼續檢查更新",
       "complete": "完成"
+    },
+    "cliTaskCompleted": {
+      "title": "{{provider}} 任務完成",
+      "failedTitle": "{{provider}} 任務異常結束",
+      "emptyBody": "{{session}} 本輪任務已結束，切換到 CLI 面板查看報告"
     }
   },
   "expanded": {
@@ -4818,6 +4824,11 @@
   "idle": {
     "pomodoro": {
       "label": "番茄鍾"
+    },
+    "cliAgent": {
+      "running": "{{provider}} 運行中",
+      "waitingPermission": "{{provider}} 等待授權",
+      "idle": "{{provider}} 本輪已完成"
     }
   },
   "oauth": {
