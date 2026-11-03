@@ -1,0 +1,65 @@
+name: eisland Local Test Build (temporary)
+
+# 临时流程：只为 feat/local-agent-without-pro 分支编译测试安装包，不发布。
+# 合并到 main 前删除此文件。
+
+on:
+  push:
+    branches: [feat/local-agent-without-pro]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-installer:
+    # 与正式发布流程一致：原生插件需要 VS2022
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.22.1'
+          cache: npm
+
+      - name: Install Visual Studio Build Tools
+        shell: pwsh
+        run: |
+          $installerPath = "${{ runner.temp }}\vs_buildtools.exe"
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vs_buildtools.exe' -OutFile $installerPath
+          Start-Process -FilePath $installerPath -ArgumentList '--quiet', '--norestart', '--nocache', '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includeRecommended' -Wait
+          Remove-Item $installerPath
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Install and verify FFmpeg binary
+        run: |
+          node node_modules/ffmpeg-static/install.js
+          node -e "const fs = require('node:fs'); const binary = require('ffmpeg-static'); if (!binary || !fs.existsSync(binary)) throw new Error('FFmpeg binary is missing');"
+
+      - name: Build plugins
+        run: npm run plugins:build
+
+      - name: Build & Package (no publish)
+        run: npm run package -- --publish never
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: eIsland-Setup
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 7
